@@ -37,12 +37,11 @@ model:
       out_dim: 512
     loss_kwargs:
       temperature: 0.1
-      penalty: 0.1
-      lambda_fusion_penalty: 0.1
-      lambda_single_penalty: 0.1
-      margin: 0.3
-      penalty_fs: 1
-      penalty_l: 1
+      synergy_uniformity_weight: 0.1
+      fusion_uniformity_weight: 0.1
+      unimodal_uniformity_weight: 0.1
+      diversity_margin: 0.3
+      synergy_weight: 1
       weights:
       - 1
       - 1

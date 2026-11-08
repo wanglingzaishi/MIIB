@@ -60,12 +60,11 @@ model:
       out_dim: 512
     loss_kwargs:
       temperature: 0.1
-      penalty: 0.1
-      lambda_fusion_penalty: 0.05
-      lambda_single_penalty: 0.05
-      margin: 0.1
-      penalty_fs: 1
-      penalty_l: 0.05
+      synergy_uniformity_weight: 0.1
+      fusion_uniformity_weight: 0.05
+      unimodal_uniformity_weight: 0.05
+      diversity_margin: 0.1
+      synergy_weight: 0.05
 data:
   name: trifeatures
   data_module:
