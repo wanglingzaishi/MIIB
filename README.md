@@ -1,64 +1,113 @@
-# MIIB: Multimodal Information Interactions Bottleneck
+<h1 align="center">MIIB: Multimodal Information Interactions Bottleneck for Multimodal Self-Supervised Learning</h1>
 
-Liangjian Wen, Jiangtao Zheng, Jiang Duan, Qun Dai, Yong Dai, Jianzhuang Liu, Jun Wang, Shu-Dong Huang, Xinwang Liu, Zenglin Xu, Zhao Kang
+<p align="center">
+  Liangjian Wen, Jiangtao Zheng, Jiang Duan, Qun Dai, Yong Dai, Jianzhuang Liu, Jun Wang, Shu-Dong Huang, Xinwang Liu, Zenglin Xu, Zhao Kang
+</p>
 
-Official PyTorch implementation of **Multimodal Information Interactions Bottleneck for Multimodal Self-Supervised Learning**, accepted by **IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI), 2026**.
+<p align="center">
+  Accepted by IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI), 2026.
+</p>
 
-[[Paper / DOI](https://doi.org/10.1109/TPAMI.2026.3751756)] · [Quick Start](#-quick-start) · [Reproduction](#-reproduction-check) · [Citation](#-citation)
+**Paper:** [arXiv: 2611.07718](https://arxiv.org/pdf/2611.07718) · [DOI: 10.1109/TPAMI.2026.3751756](https://doi.org/10.1109/TPAMI.2026.3751756)
 
----
+This repository contains the official PyTorch implementation of MIIB, a self-supervised learning framework that decomposes multimodal interactions into redundant, unique and synergistic information. It provides experiments on the synthetic **Trifeature** benchmark and on the **MultiBench** tasks **MOSI**, **MIMIC**, **UR-FUNNY**, **MUSTARD** and **Vision&Touch**, together with **MM-IMDb**.
 
-## 🎯 TL;DR
+## Overview
 
-MIIB learns three complementary kinds of multimodal representation:
+Multimodal self-supervised learning is challenged by heterogeneity, unequal informativeness and complex information interactions across modalities such as images, text, audio and tabular data. While contrastive methods effectively align shared semantics, they typically rely on strong multi-view redundancy assumptions, overlooking modality-specific and synergistic information.
 
-- modality-specific information from every input modality;
-- modality-fused information shared by the joint observation;
-- synergistic information that emerges only through cross-modal interaction.
+MIIB is grounded in Partial Information Decomposition and explicitly decomposes multimodal interactions into three atoms: **redundancy** shared across modalities, **uniqueness** specific to a single modality, and **synergy** that only emerges through cross-modal interaction. It employs a **dual-path architecture** for modality-specific encoding and multimodal fusion, optimized with surrogate tractable entropy-based objectives that enforce minimal sufficient representations without requiring explicit mutual information estimation.
 
-Two Transformer streams separately model fusion and synergy. The complete objective combines modality-specific, modality-fusion and synergy terms while retaining the historical linear-probing protocol used by the paper.
+<p align="center">
+  <img src="assets/model_framework.png" alt="MIIB framework: modality-specific encoding, a Fusion Transformer for shared and fused representations, and an independent Synergy Transformer for cross-modal interactions." width="100%" />
+</p>
 
-## 📊 Key Results
+The diagram shows the two interdependent processes that MIIB models. The **Fusion Transformer** produces individual-modality and fused representations that carry redundancy and uniqueness, while a separate **Synergy Transformer** operates on the concatenated multimodal features to capture interactions that neither modality carries alone. Each synergy representation is trained to predict the other view's fused representation, which can only be satisfied by information jointly carried across modalities — synergy is therefore learned rather than merely encouraged to differ from the unimodal streams.
 
-The following values are reported in the accepted paper. They are targets for reproduction, not results newly generated during this repository cleanup.
+### Differences against prior work
 
-### Controlled information · Trifeature
+Compared with FactorCL and CoMM, MIIB differs in three respects:
 
-| Method | Redundancy ↑ | Uniqueness ↑ | Synergy ↑ |
+1. Instead of regularizing a single fused space, it models multimodal learning as two interdependent processes — modality-specific encoding and fusion — and imposes a minimal-sufficiency bottleneck at both levels, so the two stages constrain each other.
+2. It gives synergy a dedicated stream from a separate Synergy Transformer supervised by the fused cross-view representations, rather than only encouraging the synergy representation to differ from the unimodal streams.
+3. The objective is reduced to a finite hyper-sphere entropy-and-alignment regularizer estimated by a score-based von Mises–Fisher estimator, avoiding the direct mutual information estimation that FactorCL and CoMM rely on.
+
+### Experimental results
+
+The tables below report the results published in the accepted paper.
+
+#### Controlled information · Trifeature
+
+Linear probing accuracy (in %) for redundancy (shape), uniqueness (texture) and synergy (color and texture). † denotes results reported by CoMM.
+
+| Model | Redundancy ↑ | Uniqueness ↑ | Synergy ↑ |
 | --- | ---: | ---: | ---: |
+| Cross† | 100.0 | 11.6 | 50.0 |
+| Cross+Self† | 99.7 | 86.9 | 50.0 |
+| FactorCL† | 99.8 | 62.5 | 46.5 |
 | CoMM | 99.9 ± 0.06 | 86.8 ± 2.99 | 71.4 ± 3.47 |
-| **MIIB** | **99.9 ± 0.12** | **89.8 ± 3.23** | **79.1 ± 2.97** |
+| **MIIB (ours)** | **99.9 ± 0.12** | **89.8 ± 3.23** | **79.1 ± 2.97** |
 
-### Classification · V&T and UR-FUNNY
+#### MultiBench · Linear probing
 
-| Modalities | V&T contact ↑ | UR-FUNNY ↑ |
-| ---: | ---: | ---: |
-| 2 | **88.4 ± 0.32** | **65.4 ± 0.90** |
-| 3 | **94.2 ± 0.11** | **66.2 ± 0.85** |
+MSE (×10⁻⁴) for the regression task and top-1 accuracy (in %) for classification tasks. † denotes results reported by CoMM. The average is selected only from the classification tasks.
 
-### MultiBench and MM-IMDb
+| Model | V&T EE ↓ | MIMIC ↑ | MOSI ↑ | UR-FUNNY ↑ | MUSTARD ↑ | Average ↑ |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Cross† | 33.09 ± 3.67 | 66.7 ± 0.1 | 47.8 ± 1.8 | 50.1 ± 1.9 | 53.5 ± 2.9 | 54.52 |
+| Cross+Self† | 7.56 ± 0.31 | 65.49 ± 0.0 | 49.0 ± 1.1 | 59.9 ± 0.9 | 53.9 ± 4.0 | 57.07 |
+| FactorCL† | 10.82 ± 0.56 | 67.3 ± 0.0 | 51.2 ± 1.6 | 60.5 ± 0.8 | 55.80 ± 0.9 | 58.7 |
+| CoMM | 7.96 ± 2.13 | 66.4 ± 0.4 | 63.7 ± 2.5 | 63.3 ± 0.5 | 64.4 ± 1.1 | 64.45 |
+| **MIIB (ours)** | **5.74 ± 0.69** | **68.1 ± 0.3** | **67.4 ± 1.8** | **65.4 ± 0.9** | **66.0 ± 2.0** | **66.73** |
 
-| Metric | MIIB |
-| --- | ---: |
-| V&T EE MSE × 10⁻⁴ ↓ | **5.74 ± 0.69** |
-| MIMIC accuracy ↑ | **68.1 ± 0.3** |
-| MOSI accuracy ↑ | **67.4 ± 1.8** |
-| MUSTARD accuracy ↑ | **66.0 ± 2.0** |
-| MM-IMDb weighted F1 ↑ | **62.80 ± 0.24** |
-| MM-IMDb macro F1 ↑ | **56.20 ± 0.16** |
+#### MultiBench · Supervised fine-tuning
 
-## 🧩 Approach
+| Model | V&T EE ↓ | MIMIC ↑ | MOSI ↑ | UR-FUNNY ↑ | MUSTARD ↑ | Average ↑ |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| CoMM | 1.61 ± 0.16 | 67.57 ± 0.65 | 71.84 ± 2.7 | 64.99 ± 0.96 | 68.25 ± 1.69 | 68.16 |
+| **MIIB (fine-tuned)** | **1.47 ± 0.06** | **69.0 ± 0.57** | **73.24 ± 1.27** | **66.24 ± 0.18** | **69.73 ± 2.30** | **69.55** |
 
-1. Create two augmented views of every modality and encode them with modality-specific backbones and latent converters.
-2. Use the Fusion Transformer to obtain individual-modality and fused representations.
-3. Use the independent Synergy Transformer to model cross-modal interactions.
-4. Optimize modality-specific, modality-fusion and synergy objectives through a shared projection head.
+#### Trimodal benchmarks
 
-The architecture figure is available in [`assets/Model_Framework.pdf`](assets/Model_Framework.pdf).
+Linear probing top-1 accuracy (in %) on Vision&Touch contact prediction and UR-FUNNY. † denotes results reported by CoMM.
+
+| Model | # Mod. | V&T CP ↑ | UR-FUNNY ↑ |
+| --- | ---: | ---: | ---: |
+| Cross† | 2 | 86.3 ± 0.25 | 50.1 |
+| Cross+Self† | 2 | 87.6 ± 0.26 | 59.9 |
+| CoMM | 2 | 87.0 ± 1.58 | 63.3 ± 0.51 |
+| **MIIB (ours)** | 2 | **88.4 ± 0.32** | **65.4 ± 0.90** |
+| CMC† | 3 | 94.1 | 59.2 |
+| CoMM | 3 | 94.1 ± 0.17 | 64.8 ± 1.13 |
+| **MIIB (ours)** | 3 | **94.2 ± 0.11** | **66.2 ± 0.85** |
+
+#### MM-IMDb
+
+F1-score (weighted and macro, in %). △ indicates further training on unlabeled data. † denotes results reported by CoMM. MIIB and CoMM use the same pre-trained CLIP backbone.
+
+*Linear probing:*
+
+| Model | Modalities | Weighted F1 ↑ | Macro F1 ↑ |
+| --- | :---: | ---: | ---: |
+| SimCLR†△ | V | 40.35 ± 0.23 | 27.99 ± 0.33 |
+| CLIP† | V | 51.5 | 40.8 |
+| CLIP† | L | 51.0 | 43.0 |
+| CLIP† | V+L | 58.9 | 50.9 |
+| SLIP†△ | V+L | 56.54 ± 0.19 | 47.35 ± 0.27 |
+| CLIP†△ | V+L | 54.49 ± 0.19 | 44.94 ± 0.30 |
+| CoMM | V+L | 61.29 ± 0.73 | 53.79 ± 0.22 |
+| **MIIB (ours)** | V+L | **62.80 ± 0.24** | **56.20 ± 0.16** |
+
+*Supervised fine-tuning:*
+
+| Model | Modalities | Weighted F1 ↑ | Macro F1 ↑ |
+| --- | :---: | ---: | ---: |
+| MFAS† | V+L | 62.50 | 55.6 |
+| ReFNet† | V+L | - | 56.7 |
+| CoMM | V+L | 63.92 ± 0.41 | 57.90 ± 0.39 |
+| **MIIB (ours)** | V+L | **65.14 ± 0.11** | **59.32 ± 0.33** |
 
 ## 🗂 Repository Structure
-
-The layout follows the concise organization of the [HRIL repository](https://github.com/brightest66/HRIL):
 
 ```text
 MIIB/
@@ -70,11 +119,12 @@ MIIB/
 ├── models/          # MIIB encoder and modality backbones
 ├── pl_modules/      # Lightning training modules
 ├── run_scripts/     # training, testing and aggregation commands
-├── third_party/     # upstream attribution and license texts
 ├── run.py           # unified SSL training/test entry point
 ├── evaluate.py      # evaluate a saved SSL checkpoint
 ├── finetune.py      # downstream fine-tuning helper
+├── compat.py        # checkpoint metadata translation for older releases
 ├── environment.yml
+├── requirements.txt
 └── README.md
 ```
 
@@ -186,43 +236,14 @@ python run_scripts/summarize_results.py \
 
 Use `f1_weighted` / `f1_mean` for MM-IMDb and `mse --scale 10000` for V&T EE. Use `--ddof 1` for sample standard deviation.
 
+The evaluation protocol follows the paper: `acc1` is macro per-class accuracy; V&T and Trifeature reuse their held-out split for validation/test; MIMIC normalization precedes its fixed split; MM-IMDb plot selection depends on the random worker sequence.
+
 ### 5. Fine-tuning
 
 ```bash
 python finetune.py --experiment mosi --checkpoint /path/to/ssl.ckpt \
   --lr 5e-5 --head-lr 1e-3 --dropout 0.1 --epochs 100
 ```
-
-## 🔎 Original-Code Mapping
-
-The research workspace retained the historical name `CoMM`, but the mapped files contain the MIIB dual-Transformer architecture and five-term objective. The public implementation uses MIIB names throughout the core:
-
-| Function | Historical path in `comm2` | Public MIIB path |
-| --- | --- | --- |
-| Lightning model | `pl_modules/comm.py::CoMM` | `pl_modules/miib.py::MIIB` |
-| fusion/synergy encoder | `models/mmfusion.py::MMFusion` | `models/miib.py::MIIBEncoder` |
-| objective | `losses/comm_loss.py::CoMMLoss` | `losses/miib_loss.py::MIIBLoss` |
-| two-modality entry | `main_multibench.py` | `run.py` + experiment YAML |
-| three-modality entry | `main_multibench_all-mod.py` | `run.py` + experiment YAML |
-| V&T regression entry | `main_multibench_reg.py` | `run.py` + `vt_ee.yaml` |
-| Trifeature / MM-IMDb | `main_trifeatures.py` / `main_mmimdb.py` | `run.py` + corresponding YAML |
-
-The extraction preserves model construction order, shared projection head, optimizer grouping, loss order and historical probe behavior. Portable device/path handling replaces hard-coded CUDA and local absolute paths. `compat.py` only translates metadata in older checkpoints.
-
-## ✅ Reproduction Check
-
-On 6 November 2026, the extracted MIIB code was compared with the corresponding `comm2` implementation on an RTX 4090 using the archived four-worker runtime:
-
-| Dataset | Scope | Maximum metric difference | Final parameter state |
-| --- | --- | ---: | --- |
-| MUSTARD | 3 complete epochs | **0** | identical |
-| MOSI | 3 complete epochs | **0** | identical |
-
-Every recorded train/validation/probe metric was compared, and the final state dictionaries had identical SHA-256 hashes. The temporary runs and comparison report were deleted after verification as requested; no checkpoint was retained.
-
-This verifies the extraction and early training trajectory. It is not a new five-seed, 100-epoch rerun of every paper table. In particular, the final V&T EE run record was not found in the inspected `comm2` paths, so `vt_ee.yaml` follows `comm2/run_scripts/reg_train.sh`; the old test-script path label disagrees on one penalty value and should not be treated as authoritative saved hyperparameters.
-
-The historical protocol is retained for numerical comparability: classification `acc1` is macro per-class accuracy; V&T and Trifeature reuse their held-out split for validation/test; MIMIC normalization precedes its fixed split; MM-IMDb plot selection depends on the random worker sequence.
 
 ## 📝 Citation
 
@@ -238,8 +259,8 @@ The historical protocol is retained for numerical comparability: classification 
 }
 ```
 
-## 🙏 Acknowledgments
+## Thanks
 
-This codebase builds on [CoMM](https://github.com/Duplums/CoMM) and inherited components listed in [`third_party/README.md`](third_party/README.md). The repository and README organization follow the requested style of [HRIL](https://github.com/brightest66/HRIL); no HRIL training code was imported.
+We sincerely thank the contributors of the following repositories, which have been instrumental in our implementation:
 
-The authors have not assigned a project-wide license yet. Third-party notices remain in `third_party/`.
+- [What to align in multimodal contrastive learning ?](https://github.com/Duplums/CoMM)
