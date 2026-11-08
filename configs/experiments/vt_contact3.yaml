@@ -1,0 +1,101 @@
+seed: 42
+mode: train
+trainer:
+  _target_: pytorch_lightning.Trainer
+  accelerator: auto
+  strategy: auto
+  devices: 1
+  num_nodes: 1
+  max_epochs: 100
+  default_root_dir: outputs
+  use_distributed_sampler: false
+  deterministic: false
+  inference_mode: false
+  enable_progress_bar: false
+  enable_model_summary: false
+optim:
+  lr: 0.0001
+  weight_decay: 0.01
+model:
+  name: MIIB
+  model:
+    _target_: pl_modules.miib.MIIB
+    encoder:
+      _target_: models.miib.MIIBEncoder
+      embed_dim: 512
+      fusion: concat
+      pool: cls
+      n_heads: 8
+      n_layers: 1
+      add_bias_kv: false
+      dropout: 0
+    projection:
+      _target_: pl_modules.miib.MIIB._build_mlp
+      in_dim: 512
+      mlp_dim: 2048
+      out_dim: 512
+    loss_kwargs:
+      temperature: 0.1
+      penalty: 0.01
+      lambda_fusion_penalty: 0.01
+      lambda_single_penalty: 0.01
+      margin: 0.3
+      penalty_fs: 1
+      penalty_l: 0.1
+      weights:
+      - 1
+      - 1
+      - 1
+      - 1
+      - 1
+data:
+  name: multibench
+  data_module:
+    _target_: dataset.multibench.MultiBenchDataModule
+    dataset: visionandtouch-bin
+    batch_size: 64
+    num_workers: 4
+linear_probing:
+  _target_: evaluation.linear_probe.LinearProbingCallback
+  use_sklearn: false
+  fastsearch: false
+  logging_level: INFO
+  frequency: by_epoch
+visionandtouch-bin:
+  modalities:
+  - image
+  - force
+  - proprio
+  task: contact_next
+  kwargs:
+    augmentations:
+    - simclr
+    - noise+drop
+    - noise
+  encoders:
+  - _target_: timm.create_model
+    model_name: resnet18
+    pretrained: false
+    num_classes: 0
+    global_pool: ''
+  - _target_: models.robotics.ForceEncoder
+    z_dim: 512
+  - _target_: models.robotics.ProprioEncoder
+    z_dim: 512
+  adapters:
+  - _target_: models.input_adapters.PatchedInputAdapter
+    num_channels: 512
+    stride_level: 1
+    patch_size_full: 1
+    dim_tokens: 512
+    image_size: 4
+  - _target_: models.input_adapters.SimpleFeaturesInputAdapter
+  - _target_: models.input_adapters.SimpleFeaturesInputAdapter
+family: multibench
+experiment: vt_contact3
+ckpt_path: null
+probe: true
+save_checkpoints: true
+early_stopping: false
+threads: 8
+evaluation_protocol: historical

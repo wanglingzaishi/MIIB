@@ -1,0 +1,93 @@
+seed: 42
+mode: train
+trainer:
+  _target_: pytorch_lightning.Trainer
+  accelerator: auto
+  strategy: auto
+  devices: 1
+  num_nodes: 1
+  max_epochs: 100
+  default_root_dir: outputs
+  use_distributed_sampler: false
+  deterministic: false
+  inference_mode: false
+  num_sanity_val_steps: 1
+  enable_progress_bar: false
+  enable_model_summary: false
+optim:
+  lr: 0.0003
+  weight_decay: 0.01
+model:
+  name: MIIB
+  model:
+    _target_: pl_modules.miib.MIIB
+    encoder:
+      _target_: models.miib.MIIBEncoder
+      embed_dim: 512
+      fusion: concat
+      pool: cls
+      n_heads: 8
+      n_layers: 1
+      add_bias_kv: false
+      dropout: 0
+    projection:
+      _target_: pl_modules.miib.MIIB._build_mlp
+      in_dim: 512
+      mlp_dim: 2048
+      out_dim: 512
+    loss_kwargs:
+      temperature: 0.1
+      penalty: 0.01
+      lambda_fusion_penalty: 0.01
+      lambda_single_penalty: 0.01
+      margin: 0.1
+      penalty_fs: 1
+      penalty_l: 1.0
+data:
+  name: multibench
+  data_module:
+    _target_: dataset.multibench.MultiBenchDataModule
+    dataset: mimic
+    batch_size: 64
+    num_workers: 4
+    labeled_ratio: 1.0
+    label_seed: 42
+linear_probing:
+  _target_: evaluation.linear_probe.LinearProbingCallback
+  use_sklearn: false
+  fastsearch: false
+  logging_level: INFO
+  frequency: by_epoch
+mimic:
+  modalities:
+  - tabular
+  - timeseries
+  task: 7
+  kwargs:
+    augmentations:
+    - noise
+    - drop+noise
+  encoders:
+  - _target_: models.mlp.MLP
+    indim: 5
+    hiddim: 10
+    outdim: 10
+    dropout: false
+  - _target_: models.gru.GRU
+    indim: 12
+    hiddim: 512
+    dropout: false
+    batch_first: true
+  adapters:
+  - _target_: models.input_adapters.FeaturesInputAdapter
+    n_features: 10
+    dim_tokens: 512
+  - null
+family: multibench
+experiment: mimic
+ckpt_path: null
+probe: true
+save_checkpoints: true
+early_stopping: false
+threads: 8
+evaluation_protocol: historical

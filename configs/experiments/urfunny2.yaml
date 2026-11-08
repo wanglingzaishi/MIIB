@@ -1,0 +1,95 @@
+seed: 42
+mode: train
+trainer:
+  _target_: pytorch_lightning.Trainer
+  accelerator: auto
+  strategy: auto
+  devices: 1
+  num_nodes: 1
+  max_epochs: 100
+  default_root_dir: outputs
+  use_distributed_sampler: false
+  deterministic: false
+  inference_mode: false
+  num_sanity_val_steps: 1
+  enable_progress_bar: false
+  enable_model_summary: false
+optim:
+  lr: 0.001
+  weight_decay: 0.01
+model:
+  name: MIIB
+  model:
+    _target_: pl_modules.miib.MIIB
+    encoder:
+      _target_: models.miib.MIIBEncoder
+      embed_dim: 40
+      fusion: concat
+      pool: cls
+      n_heads: 8
+      n_layers: 1
+      add_bias_kv: false
+      dropout: 0
+    projection:
+      _target_: pl_modules.miib.MIIB._build_mlp
+      in_dim: 40
+      mlp_dim: 2048
+      out_dim: 512
+    loss_kwargs:
+      temperature: 0.1
+      penalty: 0.01
+      lambda_fusion_penalty: 0.1
+      lambda_single_penalty: 0.01
+      margin: 0.3
+      penalty_fs: 1
+      penalty_l: 1
+      weights:
+      - 1
+      - 1
+      - 1
+      - 1
+      - 1
+data:
+  name: multibench
+  data_module:
+    _target_: dataset.multibench.MultiBenchDataModule
+    dataset: humor
+    batch_size: 64
+    num_workers: 4
+    labeled_ratio: 1.0
+    label_seed: 42
+linear_probing:
+  _target_: evaluation.linear_probe.LinearProbingCallback
+  use_sklearn: false
+  fastsearch: false
+  logging_level: INFO
+  frequency: by_epoch
+humor:
+  modalities:
+  - vision
+  - text
+  task: classification
+  kwargs:
+    augmentations: drop+noise
+  encoders:
+  - _target_: models.transformer.Transformer
+    n_features: 371
+    dim: 40
+    max_seq_length: 50
+    positional_encoding: false
+  - _target_: models.transformer.Transformer
+    n_features: 300
+    dim: 40
+    max_seq_length: 50
+    positional_encoding: false
+  adapters:
+  - null
+  - null
+family: multibench
+experiment: urfunny2
+ckpt_path: null
+probe: true
+save_checkpoints: true
+early_stopping: false
+threads: 8
+evaluation_protocol: historical

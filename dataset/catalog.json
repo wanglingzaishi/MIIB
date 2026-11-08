@@ -1,0 +1,31 @@
+{
+  "mimic": {
+    "path": "mimic/im.pk"
+  },
+  "mosi": {
+    "path": "mosi/mosi_data.pkl"
+  },
+  "mosei": {
+    "path": "mosei/mosei_senti_data.pkl"
+  },
+  "humor": {
+    "path": "humor/humor.pkl"
+  },
+  "sarcasm": {
+    "path": "sarcasm/sarcasm.pkl"
+  },
+  "visionandtouch": {
+    "path": "visionandtouch/triangle_real_data"
+  },
+  "mmimdb": {
+    "path": "mmimdb",
+    "metadata": "mmimdb"
+  },
+  "hateful_memes": {
+    "path": "hateful_memes",
+    "metadata": "hateful_memes"
+  },
+  "trifeatures": {
+    "path": "trifeatures_3combi"
+  }
+}

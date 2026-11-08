@@ -1,0 +1,97 @@
+seed: 42
+mode: train
+trainer:
+  _target_: pytorch_lightning.Trainer
+  accelerator: auto
+  strategy: auto
+  devices: 1
+  num_nodes: 1
+  max_epochs: 100
+  default_root_dir: outputs
+  use_distributed_sampler: false
+  deterministic: false
+  check_val_every_n_epoch: 1
+  num_sanity_val_steps: 0
+  inference_mode: false
+  enable_progress_bar: false
+  enable_model_summary: false
+optim:
+  lr: 0.001
+  weight_decay: 0.01
+  lr_scheduler:
+    final_value: 1.0e-06
+    epochs: 100
+    warmup_epochs: 10
+    start_warmup_value: 1.0e-06
+model:
+  name: MIIB
+  model:
+    _target_: pl_modules.miib.MIIB
+    encoder:
+      _target_: models.miib.MIIBEncoder
+      embed_dim: 768
+      fusion: concat
+      pool: cls
+      n_heads: 8
+      n_layers: 1
+      add_bias_kv: false
+      dropout: 0
+    projection:
+      _target_: pl_modules.miib.MIIB._build_mlp
+      in_dim: 768
+      mlp_dim: 2048
+      out_dim: 512
+    loss_kwargs:
+      temperature: 0.1
+      penalty: 0.01
+      lambda_fusion_penalty: 0.1
+      lambda_single_penalty: 0.1
+      margin: 0.5
+      penalty_fs: 0.01
+      weights:
+      - 1
+      - 1
+      - 1
+      - 1
+      - 1
+data:
+  name: mmimdb
+  data_module:
+    _target_: dataset.mmimdb.MMIMDBDataModule
+    batch_size: 64
+    num_workers: 20
+linear_probing:
+  _target_: evaluation.linear_probe.LinearProbingCallback
+  multilabel: true
+  use_sklearn: true
+  fastsearch: true
+  logging_level: INFO
+  frequency: by_epoch
+mmimdb:
+  modalities:
+  - vision
+  - text
+  encoders:
+  - _target_: models.vit.VisionTransformer
+    model_name: vit_base_patch32_clip_224.openai
+    pretrained: true
+    output_value: token_embeddings
+    freeze: true
+  - _target_: models.transformer.LanguageEncoder
+    model_name: ${oc.env:MIIB_TEXT_MODEL,sentence-transformers/clip-ViT-B-32-multilingual-v1}
+    output_value: token_embeddings
+    normalize_embeddings: true
+    use_dataset_cache: false
+    freeze: true
+    mask_prob: 0.15
+  adapters:
+  - null
+  - null
+family: mmimdb
+experiment: mmimdb
+ckpt_path: null
+probe: true
+save_checkpoints: true
+early_stopping: false
+threads: 8
+evaluation_protocol: historical

@@ -1,0 +1,95 @@
+seed: 42
+mode: train
+trainer:
+  _target_: pytorch_lightning.Trainer
+  accelerator: auto
+  strategy: auto
+  devices: 1
+  num_nodes: 1
+  max_epochs: 100
+  default_root_dir: outputs
+  use_distributed_sampler: false
+  deterministic: false
+  check_val_every_n_epoch: 1
+  num_sanity_val_steps: 1
+  inference_mode: false
+  enable_progress_bar: false
+  enable_model_summary: false
+optim:
+  lr: 0.0003
+  weight_decay: 0.0001
+model:
+  encoders:
+  - _target_: models.alexnet.AlexNetEncoder
+    latent_dim: 256
+    dropout: 0.5
+    global_pool: ''
+  - _target_: models.alexnet.AlexNetEncoder
+    latent_dim: 256
+    dropout: 0.5
+    global_pool: ''
+  adapters:
+  - _target_: models.input_adapters.PatchedInputAdapter
+    num_channels: 256
+    stride_level: 1
+    patch_size_full: 1
+    dim_tokens: 512
+    image_size: 6
+  - _target_: models.input_adapters.PatchedInputAdapter
+    num_channels: 256
+    stride_level: 1
+    patch_size_full: 1
+    dim_tokens: 512
+    image_size: 6
+  name: MIIB
+  model:
+    _target_: pl_modules.miib.MIIB
+    encoder:
+      _target_: models.miib.MIIBEncoder
+      embed_dim: 512
+      fusion: concat
+      pool: cls
+      n_heads: 8
+      n_layers: 1
+      add_bias_kv: false
+      dropout: 0
+    projection:
+      _target_: pl_modules.miib.MIIB._build_mlp
+      in_dim: 512
+      mlp_dim: 2048
+      out_dim: 512
+    loss_kwargs:
+      temperature: 0.1
+      penalty: 0.1
+      lambda_fusion_penalty: 0.05
+      lambda_single_penalty: 0.05
+      margin: 0.1
+      penalty_fs: 1
+      penalty_l: 0.05
+data:
+  name: trifeatures
+  data_module:
+    _target_: dataset.trifeatures.TrifeaturesDataModule
+    dataset: bimodal
+    batch_size: 64
+    num_workers: 16
+    max_size: 10000.0
+    share_attr: shape
+    unique_attr: texture
+    synergy_attr:
+    - texture
+    - color
+    seed: 42
+    biased: false
+family: trifeatures
+experiment: trifeatures_ru
+ckpt_path: null
+probe: true
+save_checkpoints: true
+early_stopping: false
+threads: 8
+linear_probing:
+  _target_: evaluation.linear_probe.LinearProbingCallback
+  val_loaders: false
+  frequency: by_epoch
+evaluation_protocol: historical
