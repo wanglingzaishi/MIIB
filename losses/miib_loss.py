@@ -41,12 +41,12 @@ class MIIBLoss(nn.Module):
                  synergy_uniformity_weight=0.5,
                  fusion_uniformity_weight=1.0,
                  unimodal_uniformity_weight=1.0,
-                 diversity_margin=-0.5,
+                 margin=-0.5,
                  synergy_weight=1.0,
                  weights=None):
         super().__init__()
 
-        self.cosine_loss = Cosine_loss(diversity_margin)
+        self.cosine_loss = Cosine_loss(margin)
         self.temperature = temperature
         self.weights = weights
         self.fusion_uniformity_weight = fusion_uniformity_weight

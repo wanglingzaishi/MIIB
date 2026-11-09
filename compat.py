@@ -6,7 +6,7 @@ LOSS_KWARG_RENAMES = {
     "penalty": "synergy_uniformity_weight",
     "lambda_fusion_penalty": "fusion_uniformity_weight",
     "lambda_single_penalty": "unimodal_uniformity_weight",
-    "margin": "diversity_margin",
+    "diversity_margin": "margin",
     "penalty_l": "synergy_weight",
 }
 

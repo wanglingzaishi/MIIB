@@ -210,8 +210,6 @@ Hydra overrides can follow the profile name. For a short run that does not save 
 bash run_scripts/run.sh mosi trainer.max_epochs=3 save_checkpoints=false
 ```
 
-Outputs are written to `outputs/MIIB/<profile>/seed_<seed>/` and are ignored by Git.
-
 ### 4. Evaluation
 
 ```bash

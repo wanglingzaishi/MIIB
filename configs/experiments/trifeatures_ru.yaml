@@ -63,7 +63,7 @@ model:
       synergy_uniformity_weight: 0.1
       fusion_uniformity_weight: 0.05
       unimodal_uniformity_weight: 0.05
-      diversity_margin: 0.1
+      margin: 0.1
       synergy_weight: 0.05
 data:
   name: trifeatures

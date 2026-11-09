@@ -39,7 +39,7 @@ model:
       synergy_uniformity_weight: 0.05
       fusion_uniformity_weight: 0.01
       unimodal_uniformity_weight: 0.05
-      diversity_margin: 0.5
+      margin: 0.5
       synergy_weight: 0.1
       weights:
       - 1

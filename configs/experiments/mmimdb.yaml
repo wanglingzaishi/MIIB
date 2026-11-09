@@ -45,8 +45,8 @@ model:
       temperature: 0.1
       synergy_uniformity_weight: 0.01
       fusion_uniformity_weight: 0.1
-      unimodal_uniformity_weight: 0.1
-      diversity_margin: 0.5
+      unimodal_uniformity_weight: 0.01
+      margin: 0.5
       weights:
       - 1
       - 1
